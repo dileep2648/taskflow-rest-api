@@ -1,7 +1,20 @@
 const express = require('express');
 const app = express();
-app.use(express.json());
 
+class AppError extends Error{
+    constructor(message,statusCode){
+        super(message);
+        this.statusCode=statusCode;
+    }
+}
+//MIDDLEWARES...........
+
+app.use(express.json());
+app.use((req, res, next) => {
+    console.log("METHOD:", req.method);
+    console.log("URL:", req.url);
+    next();
+});
 const tasks = [
     {
         id: 1,
@@ -14,6 +27,36 @@ const tasks = [
         completed: false
     }
 ];
+
+function validateTask(req,res,next) {
+if (!req.body.title) {
+        return res.status(400).json({
+            message: "Title is mandatory:]"
+        })
+    }
+
+    if (typeof req.body.title !== "string") {
+        return res.status(400).json({
+            message: "title type must be a string"
+        })
+    }
+
+    if (req.body.title.trim() === "") {
+        return res.status(400).json({
+            message: "the title must not be empty string"
+        })
+    }
+
+
+    if(req.body.completed===undefined)req.body.completed=false;
+    if(typeof req.body.completed!=="boolean"){
+       return res.status(400).json({
+        message:"completed field must be a boolean"
+       })
+    }
+
+    next();
+}
 
 // GET requestsss....
 app.get("/", (req, res) => {
@@ -76,25 +119,8 @@ app.get("/api/tasks/:id", (req, res) => {
 
 //POST requestssss.....
 
-app.post("/api/tasks", (req, res) => {
+app.post("/api/tasks", validateTask,(req, res) => {
     console.log(req.body);
-    if (!req.body.title) {
-        return res.status(400).json({
-            message: "Title is mandatory:]]"
-        })
-    }
-
-    if (typeof req.body.title !== "string") {
-        return res.status(400).json({
-            message: "title type must be a string"
-        })
-    }
-
-    if (req.body.title.trim() === "") {
-        return res.status(400).json({
-            message: "the title must not be empty string"
-        })
-    }
     const newID = tasks.length + 1;
     const ntask = {
         id: newID,
@@ -160,7 +186,15 @@ app.delete("/api/tasks/:id", (req, res) => {
     })
 })
 
-
+app.get("/test-error",(req,res,next)=>{
+   next(new AppError("Task not found",404))
+})
+app.use((err,req,res,next)=>{
+    console.log(err);
+    return res.status(err.statusCode || 500).json({
+       message:err.message || " some unknowm error occured :/"
+    })
+});
 
 
 app.listen(3000);
