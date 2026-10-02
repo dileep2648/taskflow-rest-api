@@ -24,24 +24,39 @@ app.get("/about", (req, res) => {
 });
 app.get("/api/tasks", (req, res) => {
     console.log(req.query);
+    let FTasks = [...tasks];
     if (req.query.completed !== undefined) {
         const cmp = req.query.completed.toLowerCase() === "true";
-        const Tasks = tasks.filter(task => task.completed === cmp);
+        FTasks = FTasks.filter(task => task.completed === cmp);
         console.log(cmp);
-        console.log(Tasks);
-        return res.status(200).json({
-            tasks: Tasks
-        })
+        console.log(FTasks);
     }
 
-    if(req.query.search !== undefined){
+    if (req.query.search !== undefined) {
         const searchTerm = req.query.search.toLowerCase();
-        const filteredTasks = tasks.filter(task => task.title.toLowerCase().includes(searchTerm));
-        return res.status(200).json({
-            tasks: filteredTasks
-        });
+        FTasks = FTasks.filter(task => task.title.toLowerCase().includes(searchTerm));
     }
-    res.json(tasks);
+
+    if (req.query.sort !== undefined) {
+        if (req.query.order === "asc") {
+            FTasks.sort((a, b) => a.title.localeCompare(b.title));
+        }
+        else if(req.query.order === "desc") {
+            FTasks.sort((a, b) => b.title.localeCompare(a.title));
+        }
+    }
+
+    if (req.query.page !== undefined && req.query.limit !== undefined) {
+        const page = Number(req.query.page);
+        const limit = Number(req.query.limit);
+        const start = (page-1)*limit;
+        const end = start+limit;
+        FTasks=FTasks.slice(start,end);
+}
+
+    return res.status(200).json({
+        tasks: FTasks
+    });
 });
 app.get("/api/tasks/:id", (req, res) => {
     console.log(req.params);
@@ -86,9 +101,9 @@ app.post("/api/tasks", (req, res) => {
         title: req.body.title,
         completed: req.body.completed
     }
-   tasks.push(ntask);
+    tasks.push(ntask);
 
-return res.status(201).json(ntask);
+    return res.status(201).json(ntask);
 
 });
 
@@ -145,7 +160,7 @@ app.delete("/api/tasks/:id", (req, res) => {
     })
 })
 
-//Queriess.......
+
 
 
 app.listen(3000);
