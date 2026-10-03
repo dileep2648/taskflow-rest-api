@@ -1,146 +1,132 @@
 const AppError = require("../utils/AppError");
+const {pool} = require("../db/db");
 
-const tasks = [
-    {
-        id: 1,
-        title: "Learn Node.js",
-        completed: false
-    },
-    {
-        id: 2,
-        title: "Learn Express",
-        completed: true
-    },
-    {
-        id: 3,
-        title: "Build REST API",
-        completed: false
-    },
-    {
-        id: 4,
-        title: "Practice JavaScript",
-        completed: true
-    },
-    {
-        id: 5,
-        title: "Learn PostgreSQL",
-        completed: false
-    },
-    {
-        id: 6,
-        title: "Build TaskFlow",
-        completed: true
-    },
-    {
-        id: 7,
-        title: "Practice DSA",
-        completed: false
-    },
-    {
-        id: 8,
-        title: "Learn Git and GitHub",
-        completed: true
-    },
-    {
-        id: 9,
-        title: "Build Authentication",
-        completed: false
-    },
-    {
-        id: 10,
-        title: "Learn Docker",
-        completed: true
-    }
-];
 
-const getTasks = (query) => {
-    let FTasks = [...tasks];
-    if (query.completed !== undefined) {
-        const cmp = query.completed.toLowerCase() === "true";
-        FTasks =FTasks.filter(task => task.completed === cmp);
+const getTasks = async (query)=>{
+    let sql = "SELECT * FROM tasks";
+    const values = [];
+    const conditions = [];
+
+    if(query.completed!==undefined){
+        values.push(query.completed=== "true");
+        conditions.push(`completed = $${values.length}`)
     }
 
-    if (query.search !== undefined) {
-        const searchTerm = query.search.toLowerCase();
-        FTasks = FTasks.filter(task => task.title.toLowerCase().includes(searchTerm));
+    if(query.search !== undefined){
+        values.push(`%${query.search}`);
+        conditions.push(`title ILIKE $${values.length}`)
     }
 
-    if (query.sort !== undefined) {
-        if (query.order === "asc") {
-            FTasks.sort((a, b) => a.title.localeCompare(b.title));
-        }
-        else if(query.order === "desc") {
-            FTasks.sort((a, b) => b.title.localeCompare(a.title));
+    if(conditions.length>0){
+        sql+=" WHERE " + conditions.join(" AND ");
+    }
+
+    if (query.sort === "title") {
+        sql += " ORDER BY title";
+
+        if (query.order === "desc") {
+            sql += " DESC";
+        } else {
+            sql += " ASC";
         }
     }
-
-    if (query.page !== undefined && query.limit !== undefined) {
+    
+     if (query.page !== undefined && query.limit !== undefined) {
         const page = Number(query.page);
         const limit = Number(query.limit);
-        const start = (page-1)*limit;
-        const end = start+limit;
-        FTasks=FTasks.slice(start,end);
-}
-    return FTasks;
-}
+        const offset = (page - 1) * limit;
 
-const getTaskById = (id)=>{
-    const task = tasks.find(task=>task.id===id);
-        if(!task){
-            throw new AppError("No task found with that ID",404);
-        }
+        values.push(limit);
+        sql += ` LIMIT $${values.length}`;
 
-        return task;
-   
-}
-
-const createTask = (taskData)=>{
-    const newID = tasks.length + 1;
-    const ntask = {
-        id: newID,
-        title: taskData.title,
-        completed: taskData.completed
+        values.push(offset);
+        sql += ` OFFSET $${values.length}`;
     }
-    tasks.push(ntask);
 
-    return ntask;
+    const result = await pool.query(sql, values);
+    if(result.rows.length===0)throw new AppError("No tasks found", 404);
+    return result.rows;
+    
 }
 
-const updateTask =(id,taskData)=>{
-    const uTask = tasks.find(task => task.id === id);
-     if (!uTask) {
-        throw new AppError("Task not found", 404);
+
+
+const getTaskById = async (id)=>{
+    const result  = await pool.query("SELECT * FROM tasks WHERE id = $1",[id]);
+    if(result.rows.length===0)throw new AppError("Failed to find task", 404);
+    return result.rows[0];
+}
+  
+
+
+const createTask =async (taskData)=>{
+    const result = await pool.query(
+        `INSERT INTO tasks (title,completed)
+        VALUES ($1,$2)
+        RETURNING *`,
+        [taskData.title,taskData.completed]
+    );
+    if(result.rows.length===0)throw new AppError("Failed to create task", 400);
+    return result.rows[0];
+}
+
+const updateTask = async(id,taskData)=>{
+    const result = await pool.query(`
+        UPDATE tasks
+        SET title=$1,completed =$2
+        WHERE id = $3
+        RETURNING *`,
+    [taskData.title,taskData.completed,id]);
+    if(result.rows.length===0)throw new AppError("Failed to update task", 404);
+    return result.rows[0];
+
+}
+
+const patchTask = async (id, taskData) => {
+    const fields = [];
+    const values = [];
+    let index = 1;
+
+    if (taskData.title !== undefined) {
+        fields.push(`title = $${index}`);
+        values.push(taskData.title);
+        index++;
     }
-    uTask.title=taskData.title;
-    uTask.completed=taskData.completed;
-    return uTask;
-}
 
-const patchTask =(id,taskData)=>{
-    const pTask = tasks.find(task => task.id === id);
-    if (!pTask) {
-    throw new AppError("Task not found", 404);
-}
-    if(taskData.title!==undefined){
-        pTask.title=taskData.title;
+    if (taskData.completed !== undefined) {
+        fields.push(`completed = $${index}`);
+        values.push(taskData.completed);
+        index++;
     }
-    if(taskData.completed!==undefined){
-        pTask.completed=taskData.completed;
+
+    if (fields.length === 0) {
+        throw new AppError("No fields provided for update", 400);
     }
-    return pTask;
-}
 
-const deleteTask =(id)=>{
-    const dTask = tasks.find(task => task.id === id);
+    values.push(id);
 
-if (!dTask) {
-    throw new AppError("Task not found", 404);
-}
-    const ID = tasks.findIndex(task=>task.id===id);
-    tasks.splice(ID,1);
-    return dTask;
+    const result = await pool.query(
+        `UPDATE tasks
+         SET ${fields.join(", ")}
+         WHERE id = $${index}
+         RETURNING *`,
+        values
+    );
+
+    if (result.rows.length === 0) {
+        throw new AppError("Failed to update task", 404);
+    }
+
+    return result.rows[0];
+};
+
+const deleteTask =async (id)=>{
+    const result = await pool.query("DELETE FROM tasks WHERE id = $1 RETURNING *",[id]);
+    if(result.rows.length===0)throw new AppError("Failed to delete task", 404);
+    return result.rows[0];
 }
 
 module.exports = {
     getTasks,getTaskById,createTask,updateTask,patchTask,deleteTask
 };
+    

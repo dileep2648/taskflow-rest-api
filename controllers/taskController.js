@@ -2,52 +2,77 @@ const {getTasks,getTaskById,createTask,updateTask,patchTask,deleteTask} = requir
 
 
 
-const getTasksController = (req, res) => {
-    const tasks = getTasks(req.query);
-    res.json({
-        tasks:tasks,
-        message: "Controller is working!"
-    });
+const getTasksController = async (req,res,next)=>{
+    try{
+        const tasks = await getTasks(req.query);
+        return res.status(200).json({
+            tasks:tasks
+        });
+    } catch (error){
+        next(error);
+    }
 };
 
-const getTaskByIDController = (req,res)=>{
-    const task = getTaskById(Number(req.params.id));
-    res.json({
+const getTaskByIDController = async (req,res,next)=>{
+    try{
+    const task = await getTaskById(Number(req.params.id));
+     res.json({
         task:task
-    })
+    }); }
+
+    catch(error){
+        next(error);
+    }
+   
 }
 
 
-const createTaskController = (req, res) => {
-    const newTask = createTask(req.body);
-
+const createTaskController = async (req, res, next) => {
+    try{
+    const newTask = await  createTask(req.body);
     return res.status(201).json({
         task: newTask
-    });
+    });}
+    catch(error){
+        next(error);
+    }
 };
 
-const updateTaskController =(req,res)=>{
-     const ID = Number(req.params.id);
-    const uTask = updateTask(ID,req.body);
+const updateTaskController =async (req,res,next)=>{
+    const ID = Number(req.params.id);
+    try{
+    const uTask = await updateTask(ID,req.body);
     return res.status(200).json({
         task:uTask
-    });
+    });}
+    catch (error)
+    {
+        next(error);
+    }
 }
 
-const patchTaskController =(req,res)=>{
+const patchTaskController =async (req,res,next)=>{
     const ID = Number(req.params.id);
-    const pTask = patchTask(ID,req.body);
-    return res.status(200).json({
-        task:pTask
-    });
+    try{
+        const pTask = await patchTask(ID,req.body);
+        return res.status(200).json({
+            task:pTask
+        });
+    } catch (error) {
+        next(error);
+    }
 }
 
-const deleteTaskController =(req,res)=>{
+const deleteTaskController =async (req,res,next)=>{
     const ID = Number(req.params.id);
-    const dTask = deleteTask(ID);
-    return res.status(200).json({
-        task:dTask
-    });
+    try{
+        const dTask = await deleteTask(ID);
+        return res.status(200).json({
+            task:dTask
+        });
+    } catch (error) {
+        next(error);
+    }
 }
 
 module.exports = {
