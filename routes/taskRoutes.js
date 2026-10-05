@@ -1,15 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const validateTask = require("../middlewear/validateTask");
+const patchValidator = require("../middlewear/patchValidator");
+const queryValidator = require("../middlewear/queryValidator");
 const {getTasksController,getTaskByIDController,createTaskController,updateTaskController,patchTaskController,deleteTaskController} = require("../controllers/taskController");
 
 
-router.get("/", getTasksController);
+router.get("/", queryValidator, getTasksController);
 router.get("/:id",getTaskByIDController);
 router.post("/", validateTask, createTaskController);
-router.put("/:id",updateTaskController);
-router.patch("/:id",patchTaskController);
-router.delete("/:id",deleteTaskController)
+router.put("/:id",validateTask,updateTaskController);
+router.patch("/:id",patchValidator,patchTaskController);
+router.delete("/:id",deleteTaskController);
 
 
 router.get("/", (req, res) => {

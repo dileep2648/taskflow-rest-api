@@ -1,4 +1,15 @@
 const validateTask= function (req,res,next) {
+ 
+   const allowedFields = ["title", "completed"];
+
+for (const field of Object.keys(req.body)) {
+    if (!allowedFields.includes(field)) {
+        return res.status(400).json({
+            message: `Unknown field: ${field}`
+        });
+    }
+}
+
 if (!req.body.title) {
         return res.status(400).json({
             message: "Title is mandatory:]"
