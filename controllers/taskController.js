@@ -4,7 +4,7 @@ const {getTasks,getTaskById,createTask,updateTask,patchTask,deleteTask} = requir
 
 const getTasksController = async (req,res,next)=>{
     try{
-        const tasks = await getTasks(req.query);
+        const tasks = await getTasks(req.query,req.user.sub);
         return res.status(200).json({
             tasks:tasks
         });
@@ -15,7 +15,7 @@ const getTasksController = async (req,res,next)=>{
 
 const getTaskByIDController = async (req,res,next)=>{
     try{
-    const task = await getTaskById(Number(req.params.id));
+    const task = await getTaskById(Number(req.params.id), req.user.sub);
      res.json({
         task:task
     }); }
@@ -29,7 +29,7 @@ const getTaskByIDController = async (req,res,next)=>{
 
 const createTaskController = async (req, res, next) => {
     try{
-    const newTask = await  createTask(req.body);
+    const newTask = await  createTask(req.body,req.user.sub);
     return res.status(201).json({
         task: newTask
     });}
@@ -41,7 +41,7 @@ const createTaskController = async (req, res, next) => {
 const updateTaskController =async (req,res,next)=>{
     const ID = Number(req.params.id);
     try{
-    const uTask = await updateTask(ID,req.body);
+    const uTask = await updateTask(ID,req.body,req.user.sub);
     return res.status(200).json({
         task:uTask
     });}
@@ -54,7 +54,7 @@ const updateTaskController =async (req,res,next)=>{
 const patchTaskController =async (req,res,next)=>{
     const ID = Number(req.params.id);
     try{
-        const pTask = await patchTask(ID,req.body);
+        const pTask = await patchTask(ID,req.body,req.user.sub);
         return res.status(200).json({
             task:pTask
         });
@@ -66,7 +66,7 @@ const patchTaskController =async (req,res,next)=>{
 const deleteTaskController =async (req,res,next)=>{
     const ID = Number(req.params.id);
     try{
-        const dTask = await deleteTask(ID);
+        const dTask = await deleteTask(ID,req.user.sub);
         return res.status(200).json({
             task:dTask
         });

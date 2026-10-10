@@ -1,6 +1,11 @@
 const {Pool} = require("pg");
 require("dotenv").config();
 
+if(process.env.DB_PASSWORD === undefined){
+    console.error("Database password is not set. Please set the DB_PASSWORD environment variable.");
+    process.exit(1);
+}
+
 const pool = new Pool({
     user:"postgres",
     host: "localhost",
@@ -10,10 +15,9 @@ const pool = new Pool({
 });
 
 
-const testDB = async ()=>{
-    const result = await pool.query("SELECT * FROM tasks");
-    console.log(result.rows);
-}
+pool.on("error", (err) => {
+    console.error("Unexpected PostgreSQL pool error:", err.message);
+});
 
 
 module.exports = {pool};

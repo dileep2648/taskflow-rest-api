@@ -2,7 +2,7 @@ const AppError = require("../utils/AppError");
 const {pool} = require("../db/db");
 
 
-const getTasks = async (query)=>{
+const getTasks = async (query,userId)=>{
     let sql = "SELECT * FROM tasks";
     const values = [];
     const conditions = [];
@@ -13,9 +13,12 @@ const getTasks = async (query)=>{
     }
 
     if(query.search !== undefined){
-        values.push(`%${query.search}`);
+        values.push(`%${query.search}%`);
         conditions.push(`title ILIKE $${values.length}`)
     }
+
+    conditions.push(`user_id = $${values.length+1}`);
+    values.push(userId);
 
     if(conditions.length>0){
         sql+=" WHERE " + conditions.join(" AND ");
@@ -51,38 +54,38 @@ const getTasks = async (query)=>{
 
 
 
-const getTaskById = async (id)=>{
-    const result  = await pool.query("SELECT * FROM tasks WHERE id = $1",[id]);
+const getTaskById = async (id,userId)=>{
+    const result  = await pool.query("SELECT * FROM tasks WHERE id = $1 AND user_id = $2",[id,userId]);
     if(result.rows.length===0)throw new AppError("Failed to find task", 404);
     return result.rows[0];
 }
   
 
 
-const createTask =async (taskData)=>{
+const createTask =async (taskData,userId)=>{
     const result = await pool.query(
-        `INSERT INTO tasks (title,completed)
-        VALUES ($1,$2)
+        `INSERT INTO tasks (title,completed,user_id)
+        VALUES ($1,$2,$3)
         RETURNING *`,
-        [taskData.title,taskData.completed]
+        [taskData.title,taskData.completed,userId]
     );
     if(result.rows.length===0)throw new AppError("Failed to create task", 400);
     return result.rows[0];
 }
 
-const updateTask = async(id,taskData)=>{
+const updateTask = async(id,taskData,userId)=>{
     const result = await pool.query(`
         UPDATE tasks
         SET title=$1,completed =$2
-        WHERE id = $3
+        WHERE id = $3 AND user_id = $4
         RETURNING *`,
-    [taskData.title,taskData.completed,id]);
+    [taskData.title,taskData.completed,id,userId]);
     if(result.rows.length===0)throw new AppError("Failed to update task", 404);
     return result.rows[0];
 
 }
 
-const patchTask = async (id, taskData) => {
+const patchTask = async (id, taskData, userId) => {
     const fields = [];
     const values = [];
     let index = 1;
@@ -104,11 +107,11 @@ const patchTask = async (id, taskData) => {
     }
 
     values.push(id);
-
+    values.push(userId);
     const result = await pool.query(
         `UPDATE tasks
          SET ${fields.join(", ")}
-         WHERE id = $${index}
+         WHERE id = $${index} AND user_id = $${index + 1}
          RETURNING *`,
         values
     );
@@ -120,8 +123,8 @@ const patchTask = async (id, taskData) => {
     return result.rows[0];
 };
 
-const deleteTask =async (id)=>{
-    const result = await pool.query("DELETE FROM tasks WHERE id = $1 RETURNING *",[id]);
+const deleteTask =async (id,userId)=>{
+    const result = await pool.query("DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *",[id,userId]);
     if(result.rows.length===0)throw new AppError("Failed to delete task", 404);
     return result.rows[0];
 }
