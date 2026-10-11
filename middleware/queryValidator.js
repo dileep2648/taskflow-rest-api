@@ -45,17 +45,11 @@ const queryValidator = (req, res, next) => {
             message: "page and limit must be provided together"
         });
     }
-    else if ( req.query.page !== undefined &&
-        req.query.limit !== undefined) {
+    else if (req.query.page !== undefined && req.query.limit !== undefined) {
         const page = Number(req.query.page);
         const limit = Number(req.query.limit);
 
-        if (
-            !Number.isInteger(page) ||
-            !Number.isInteger(limit) ||
-            page < 1 ||
-            limit < 1
-        ) {
+        if (!Number.isInteger(page) || !Number.isInteger(limit) || page < 1 || limit < 1) {
             return res.status(400).json({
                 message: "page and limit must be positive integers"
             });

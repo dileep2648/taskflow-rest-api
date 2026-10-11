@@ -47,7 +47,6 @@ const getTasks = async (query,userId)=>{
     }
 
     const result = await pool.query(sql, values);
-    if(result.rows.length===0)throw new AppError("No tasks found", 404);
     return result.rows;
     
 }

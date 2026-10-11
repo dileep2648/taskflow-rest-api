@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const { pool } = require("../db/db");
 const AppError = require('../utils/AppError');
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const secret = process.env.JWT_SECRET;
 
 const registerUser = async (userData) => {

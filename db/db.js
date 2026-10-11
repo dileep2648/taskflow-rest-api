@@ -9,7 +9,7 @@ if(process.env.DB_PASSWORD === undefined){
 const pool = new Pool({
     user:"postgres",
     host: "localhost",
-    database: "taskflow",
+    database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD,
     port:5432
 });

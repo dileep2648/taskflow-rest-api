@@ -3,9 +3,10 @@ const router = express.Router();
 const validateTask = require("../middleware/validateTask");
 const patchValidator = require("../middleware/patchValidator");
 const queryValidator = require("../middleware/queryValidator");
-const {getTasksController,getTaskByIDController,createTaskController,updateTaskController,patchTaskController,deleteTaskController} = require("../controllers/taskController");
 const authMiddleware = require("../middleware/authMiddleware");
 const validateTaskId = require("../middleware/validateTaskId");
+const {getTasksController,getTaskByIDController,createTaskController,updateTaskController,patchTaskController,deleteTaskController} = require("../controllers/taskController");
+
 
 
 router.get("/", authMiddleware, queryValidator, getTasksController);
