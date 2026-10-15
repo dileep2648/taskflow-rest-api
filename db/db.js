@@ -1,8 +1,13 @@
 const {Pool} = require("pg");
 require("dotenv").config();
 
-if(process.env.DB_PASSWORD === undefined){
-    console.error("Database password is not set. Please set the DB_PASSWORD environment variable.");
+if (
+    !process.env.DATABASE_URL &&
+    process.env.DB_PASSWORD === undefined
+) {
+    console.error(
+        "Database credentials are not configured. Set DATABASE_URL or DB_PASSWORD."
+    );
     process.exit(1);
 }
 console.log("Database connection mode:", process.env.DATABASE_URL
